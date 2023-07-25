@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.entity.Account;
 import com.example.mapper.UserMapper;
+import jakarta.annotation.Resource;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService implements UserDetailsService {
-    @Mapper
+    @Resource
     UserMapper userMapper;
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
