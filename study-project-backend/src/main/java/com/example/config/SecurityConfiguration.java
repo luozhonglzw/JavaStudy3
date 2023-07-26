@@ -20,10 +20,13 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 
 @Configuration
@@ -37,8 +40,10 @@ public class SecurityConfiguration {
     @Resource
     AuthService authService;
 
+    @Resource
+    DataSource dataSource;//导入存记住我的一个数据源
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,PersistentTokenRepository repository) throws Exception {
         return http
                 .authorizeHttpRequests()
                 .anyRequest().authenticated()//所有的请求都要验证
@@ -51,6 +56,11 @@ public class SecurityConfiguration {
                 .logout()
                 .logoutUrl("/api/auth/logout")//这里发现退出登录没有权限
                 .logoutSuccessHandler(this::onAuthenticationSuccess)
+                .and()
+                .rememberMe()//这里写记住我
+                .rememberMeParameter("remember")//这里改为我们的常数
+                .tokenRepository(repository)
+                .tokenValiditySeconds(3600*24*7)//七天免登录
                 .and()
                 .userDetailsService(authService)//这里不用和以前一样了 直接在这返回就行
                 .csrf()//关闭校验
@@ -71,6 +81,14 @@ public class SecurityConfiguration {
 //                .and()
 //                .build();
 //    }
+    @Bean
+    public PersistentTokenRepository tokenRepository(){
+        //这里是用Jdbc来持久存储的 注册为bean 上面直接填入
+        JdbcTokenRepositoryImpl jdbcTokenRepository=new JdbcTokenRepositoryImpl();
+        jdbcTokenRepository.setDataSource(dataSource);//新建一个数据源 这样才能找到数据 并且插入
+        jdbcTokenRepository.setCreateTableOnStartup(false);//这里 我们要把表给创建出来 创建一次后改为false
+        return jdbcTokenRepository;
+    }//这里需要返回一个持久存储的一个仓库
 
     private CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cors = new CorsConfiguration();
@@ -90,7 +108,7 @@ public class SecurityConfiguration {
     }
 
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        response.setCharacterEncoding("gbk");
+        response.setCharacterEncoding("utf-8");
         if (request.getRequestURI().endsWith("/login"))//如果来了请求为login
         {
             response.getWriter().write(JSONObject.toJSONString(RestBean.success("登录成功")));
