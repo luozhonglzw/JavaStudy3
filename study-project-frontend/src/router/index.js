@@ -12,6 +12,11 @@ const router = createRouter({
         path:'',
         name:'welcome-login',
         component:()=>import('@/components/Welcome/LoginPage.vue')
+      },{
+        path:'register',
+        name:'welcome-register',
+        // 这里路由链接@/components/Welcome/RegisterRage.vue 页面
+        component:()=>import('@/components/Welcome/RegisterRage.vue')
       }]
     },{
         path:'/index',

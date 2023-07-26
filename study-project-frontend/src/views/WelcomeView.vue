@@ -17,7 +17,11 @@
     </div>
     <!--    <div> 这里写登录用户名密码输入框 注册 </div>-->
     <div style="width: 400px;background-color: white;">
+      <!--  跳转动画-->
+      <transition name="el-fade-in-liner">
         <router-view/>
+      </transition>
+
     </div>
   </div>
 </template>
