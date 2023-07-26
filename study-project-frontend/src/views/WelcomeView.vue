@@ -16,12 +16,16 @@
         <div style="margin-top: 5px">坚持继续学习</div>
     </div>
     <!--    <div> 这里写登录用户名密码输入框 注册 </div>-->
-    <div style="width: 400px;background-color: white;">
+    <div style="width: 400px;background-color: white; z-index: 1">
       <!--  跳转动画-->
+      <!--      <router-view v-slot="{ Component }">-->
+      <!--        <transition name="el-fade-in-liner">-->
+      <!--          <component :is="Component"/>-->
+      <!--        </transition>-->
+      <!--      </router-view>-->
       <transition name="el-fade-in-liner">
         <router-view/>
       </transition>
-
     </div>
   </div>
 </template>
