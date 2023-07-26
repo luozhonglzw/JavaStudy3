@@ -2,24 +2,20 @@ package com.example.config;
 
 import com.alibaba.fastjson.JSONObject;
 import com.example.entity.RestBean;
-import com.example.service.AuthService;
+import com.example.service.AuthrizeService;
+import com.example.service.Impl.AuthrizeServiceImpl;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
@@ -38,14 +34,14 @@ public class SecurityConfiguration {
 
      */
     @Resource
-    AuthService authService;
-
+    AuthrizeService authrizeService;
     @Resource
     DataSource dataSource;//导入存记住我的一个数据源
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,PersistentTokenRepository repository) throws Exception {
         return http
                 .authorizeHttpRequests()
+                .requestMatchers("/api/auth/**").permitAll()//这里的邮箱的请求要放行 这里与验证相关的相对应 双重验证邮箱是否合法
                 .anyRequest().authenticated()//所有的请求都要验证
                 .and()//我们要前端去返回登录界面user
                 .formLogin()
@@ -62,7 +58,7 @@ public class SecurityConfiguration {
                 .tokenRepository(repository)
                 .tokenValiditySeconds(3600*24*7)//七天免登录
                 .and()
-                .userDetailsService(authService)//这里不用和以前一样了 直接在这返回就行
+                .userDetailsService(authrizeService)//这里不用和以前一样了 直接在这返回就行
                 .csrf()//关闭校验
                 .disable()
                 .cors()

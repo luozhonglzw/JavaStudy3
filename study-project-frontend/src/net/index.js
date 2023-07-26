@@ -5,8 +5,11 @@ import {ElMessage} from "element-plus";
 
 const defaultError=()=>ElMessage.error('发生错误')
 const defaultFailure=(message)=>ElMessage.warning(message)
+
+// 这里写自己的post和get 这里用axios可以交互 这里携带三个方法 不一定用success,failure=defaultFailure,error=defaultError 构造方法一一对应
 function post(url,data,success,failure=defaultFailure,error=defaultError){
     axios.post(url,data,{
+        //axios是前后结合的一个窗口
         headers:{
             //改成表单
             'Content-Type':'application/x-www-form-urlencoded'
@@ -15,6 +18,7 @@ function post(url,data,success,failure=defaultFailure,error=defaultError){
         withCredentials:true
     }).then(({data})=>{
             if(data.success){
+                //判断 后端的数据RestBean的boolean success的   success也是后端的RestBean的方法
                 success(data.message,data.status)
             }
             else {

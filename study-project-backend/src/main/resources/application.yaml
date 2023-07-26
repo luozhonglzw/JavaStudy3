@@ -4,3 +4,11 @@ spring:
     url: jdbc:mysql://localhost:3306/study?useUnicode=true&characterEncoding=utf-8
     username: root
     password: 123456
+  mail:
+    host: smtp.163.com
+    username: 18890136301@163.com
+    password: HSTUSPSUQFZGPVUK
+    port: 25
+    properties:
+      from: 18890136301@163.com
+#      这里有报错 把端口465~25

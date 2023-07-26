@@ -2,6 +2,7 @@
 
 import {EditPen, Lock, Message, User} from "@element-plus/icons-vue";
 import router from "@/router";
+import {post} from "@/net";
 import {reactive, ref} from "vue";
 import {ElMessage} from "element-plus";
 //记得导入
@@ -88,6 +89,17 @@ const register=()=>{
     }
   })
 }
+// 这里写与邮箱验证相关的 这个和后端相链接
+const validateEmail =()=>{
+  //这里只有三个值 url,data,success
+  //import {post} from "@/net"; 这里记得返回自己的post 这里写了 axios 就可以与后端交互
+  post('/api/auth/valid-email',{
+    email: form.email
+  },(message)=>{
+    // 发送信息 弹窗型 这个
+      ElMessage.success(message)
+  })
+}
 </script>
 
 <template>
@@ -142,7 +154,7 @@ const register=()=>{
         <el-form-item prop="code">
           <el-row :gutter="10" style="width: 100%">
             <el-col :span="17">
-              <el-input v-model="form.code" type="text" placeholder="请输入验证码">
+              <el-input v-model="form.code"  type="text" placeholder="请输入验证码">
                 <template #prefix>
                   <el-icon>
                     <EditPen/>
@@ -152,7 +164,7 @@ const register=()=>{
             </el-col>
             <el-col :span="5">
 <!--              这里如果 获得邮箱是无效的话 按钮也失效 disabled失效-->
-              <el-button type="success" :disabled="!isEmailValid">获取验证码</el-button>
+              <el-button type="success" @click="validateEmail" :disabled="!isEmailValid">获取验证码</el-button>
             </el-col>
           </el-row>
         </el-form-item>
