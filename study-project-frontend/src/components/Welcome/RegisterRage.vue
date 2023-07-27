@@ -1,4 +1,4 @@
-<script setup xmlns:el-col="http://www.w3.org/1999/html">
+<script setup>
 
 import {EditPen, Lock, Message, User} from "@element-plus/icons-vue";
 import router from "@/router";
@@ -101,6 +101,7 @@ const register=()=>{
 }
 // 这里写与邮箱验证相关的 这个和后端相链接
 const validateEmail =()=>{
+  coldTime.value=60
   //这里只有三个值 url,data,success
   //import {post} from "@/net"; 这里记得返回自己的post 这里写了 axios 就可以与后端交互
   post('/api/auth/valid-register-email',{
@@ -109,8 +110,10 @@ const validateEmail =()=>{
     // 发送信息 弹窗型 这个
       ElMessage.success(message)
     // 这里设置冷却的时间 每次点击后都设置冷却的时间都为60
-    coldTime.value=60
     setInterval(()=>coldTime.value--,1000)//每秒钟设置定时器 每次都减1
+  },(message)=>{
+    ElMessage.warning(message)
+    coldTime.value=0
   })
 }
 </script>
