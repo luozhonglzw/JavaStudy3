@@ -17,6 +17,11 @@ const router = createRouter({
         name:'welcome-register',
         // 这里路由链接@/components/Welcome/RegisterRage.vue 页面
         component:()=>import('@/components/Welcome/RegisterRage.vue')
+      },{
+        path:'forget',
+        name:'welcome-forget',
+        // 这里路由链接@/components/Welcome/RegisterRage.vue 页面
+        component:()=>import('@/components/Welcome/ForgetPage.vue')
       }]
     },{
         path:'/index',

@@ -23,7 +23,7 @@
       <!--          <component :is="Component"/>-->
       <!--        </transition>-->
       <!--      </router-view>-->
-      <transition name="el-fade-in-liner">
+      <transition name="el-fade-in-liner" mode="out-in" >
         <router-view/>
       </transition>
     </div>
