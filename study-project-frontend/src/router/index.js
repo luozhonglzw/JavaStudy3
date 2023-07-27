@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import {useStore} from "@/stores";
 
 // 配置路由 定义两层路由
 const router = createRouter({
@@ -30,5 +31,19 @@ const router = createRouter({
     }
   ]
 })
-
+//这里加路由指挥
+router.beforeEach((to, from, next)=>{
+  const store = useStore()
+  if(store.auth.user!=null&&to.name.startsWith('welcome-')){//已经登录 并且想去的地方是以welcome开头的地方
+    next('/index')
+  }else if(store.auth.user==null&&to.fullPath.startsWith('/index')){//如果未登录 且想去的地方为index的话
+    next('/')//直接去登录
+  }
+  else if(to.matched.length===0){
+    next('/index')//如果没有权限的话 会继续丢到/ 这里要注意是matched
+  }
+  else {
+    next()//其他情况 直接去
+  }
+})
 export default router

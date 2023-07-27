@@ -3,9 +3,10 @@
 import {Lock, User} from "@element-plus/icons-vue";
 import  {reactive} from "vue";
 import {ElMessage} from "element-plus";
-import {post} from "@/net";
+import {get, post} from "@/net";
 import router from "@/router";
-
+import {useStore} from "@/stores";
+const store = useStore()
 const form=reactive({
   username:'',
   password:'',
@@ -20,8 +21,13 @@ const login=()=>{
       password:form.password,
       remember:form.remember
     },(message)=>{
-      ElMessage.success(message)
-      router.push('/index')
+      ElMessage.success(message)//这里登录成功后要获得用户的信息
+      get('/api/user/me',(message)=>{
+        store.auth.user=message
+        router.push('/index')//如果已经登录了自动去index 登录成功把 user拿到 否则继续为空
+      },()=>{
+        store.auth.user=null
+      })
     })
   }
 }
