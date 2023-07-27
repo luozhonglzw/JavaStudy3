@@ -54,8 +54,9 @@ public class AuthrizeServiceImpl implements AuthrizeService {
 
     }
 
+    //这里发送邮件 要分两种 1 没有用户 2 已有用户 发
     @Override
-    public String sendValidateEmail(String email,String sessionId) {
+    public String sendValidateEmail(String email,String sessionId,boolean hasAccount) {
 
         /*
           1.先成验证码
@@ -66,7 +67,8 @@ public class AuthrizeServiceImpl implements AuthrizeService {
           5.注册时 验证码对比
 
          */
-        String key="email:"+sessionId+":"+email;//冒号分割属性
+        //把是否存在账户的标识传至redis数据库中
+        String key="email:"+sessionId+":"+email+":"+hasAccount;//冒号分割属性 这里要小心 用重置密码的验证码去注册
         //判断
         if(Boolean.TRUE.equals(template.hasKey(key))){//这里要判断是不是有验证码 也就是说验证码在一分钟内不能再发送
             Long expire= Optional.ofNullable(template.getExpire(key,TimeUnit.SECONDS)).orElse(0L);//这里获得验证码剩余生效的时间
@@ -74,7 +76,12 @@ public class AuthrizeServiceImpl implements AuthrizeService {
                 return "请求频繁,请稍后";//如果大于了120返回false 剩余生效的时间 即不能连续点发送在60秒内
             }
         }
-        if(userMapper.findAccountByNameOrEmail(email)!=null){
+        //这里判断一下有没有账户和hasAccount为false 这里的hasAccount 判断是注册还是重置密码
+        Account account=userMapper.findAccountByNameOrEmail(email);
+        if(hasAccount&&account==null){
+            return "没有此邮件账户";
+        }
+        if(!hasAccount&&account!=null){
             return "邮箱已经被其他用户注册";
         }
         Random random=new Random();
@@ -95,13 +102,17 @@ public class AuthrizeServiceImpl implements AuthrizeService {
         }
     }
 
+    //这里安全校验 后创建用户
     @Override
     public String ValidateAndRegister(String username, String password, String email, String code,String sessionId) {
-        String key="email:"+sessionId+":"+email;//冒号分割属性
+        String key="email:"+sessionId+":"+email+":false";//冒号分割属性 注册这里必须没有账户
         if(Boolean.TRUE.equals(template.hasKey(key))){//先判断数据库中有没有这个key 如果存在继续
             String s=template.opsForValue().get(key);
             if(s==null)return "验证码失效 请重新请求";
             if(s.equals(code)){//请求成功去注册 这里将数据打包进数据库中 即注册
+                Account account=userMapper.findAccountByNameOrEmail(username);
+                if(account!=null)return "此用户名已被注册,请更换用户名";
+                template.delete(key);//这里要清除key 否则有安全隐患
                 password=encoder.encode(password);
                 if(userMapper.createAccount(username,password,email)>0){
                     return null;
@@ -116,5 +127,31 @@ public class AuthrizeServiceImpl implements AuthrizeService {
         else {
             return "请先请求一封验证码邮件";
         }
+    }
+
+
+    //这里允许重置密码的验证
+    @Override
+    public String validateOnly(String email, String code, String SessionId) {
+        String key="email:"+SessionId+":"+email+":true";//冒号分割属性
+        if(Boolean.TRUE.equals(template.hasKey(key))){//先判断数据库中有没有这个key 如果存在继续
+            String s=template.opsForValue().get(key);
+            if(s==null)return "验证码失效 请重新请求";
+            if(s.equals(code)){//请求成功去注册 这里将数据打包进数据库中 即注册
+                template.delete(key);//注册成功后才删 否则还在数据库中
+                    return null;
+            }else {
+                return "验证码错误,请检查后提交";
+            }
+        }
+        else {
+            return "请先请求一封验证码邮件";
+        }
+    }
+
+    @Override
+    public boolean resetPassword(String password, String email) {
+        password =encoder.encode(password);
+        return userMapper.resetPasswordByEmail(password,email)>0;
     }
 }

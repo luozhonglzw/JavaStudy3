@@ -1,6 +1,9 @@
 <script setup>
 import {reactive, ref} from "vue";
 import {EditPen, Lock, Message} from "@element-plus/icons-vue";
+import {post} from "@/net";
+import {ElMessage} from "element-plus";
+import router from "@/router";
 
 //设定在重置的什么位置
 const active=ref(0)
@@ -8,6 +11,8 @@ const active=ref(0)
 const form = reactive({
   email:'',
   code:'',
+  password:'',
+  password_repeat: '',
 })
 const validatePassword = (rule, value, callback) => {
   if (value === '') {
@@ -39,6 +44,60 @@ const rules={
   password_repeat:[
     { validator: validatePassword , trigger: ['blur','change']},
   ],
+}
+//设定一个冷却的默认值
+const coldTime =ref(0)
+//有个方法验证之前的表单是否通过 判断邮箱是否有效 一开始默认无效 这里的ref有多个选择
+const isEmailValid =  ref(false)
+// 这里要设置值 但是不用给
+const formRef =ref()
+const validateEmail =()=>{
+  //这里只有三个值 url,data,success
+  //import {post} from "@/net"; 这里记得返回自己的post 这里写了 axios 就可以与后端交互
+  post('/api/auth/valid-reset-email',{
+    email: form.email
+  },(message)=>{
+    // 发送信息 弹窗型 这个
+    ElMessage.success(message)
+    // 这里设置冷却的时间 每次点击后都设置冷却的时间都为60
+    coldTime.value=60
+    setInterval(()=>coldTime.value--,1000)//每秒钟设置定时器 每次都减1
+  })
+}
+const onValidate =(prop,isValid)=>{
+  if(prop==='email'){
+    isEmailValid.value=isValid
+  }
+}
+//这里必须要填写完整个表单
+const startRest =()=>{
+  formRef.value.validate((isValid)=>{
+    if(isValid){
+      post('/api/auth/start-rest',{
+        email:form.email,
+        code:form.code
+      },()=>{
+        active.value++
+      })
+    }else {
+      ElMessage.warning("请完整填写上面信息")
+    }
+  })
+
+}
+const doRset=()=>{
+  formRef.value.validate((isValid)=>{
+    if(isValid){
+      post('/api/auth/do-reset',{
+        password:form.password,
+      },(message)=>{
+        ElMessage.success(message)
+        router.push('/')
+      })
+    }else {
+      ElMessage.warning("请填写新的密码")
+    }
+  })
 }
 </script>
 <!-- 进度条 居中 0开始 默认0开始-->
@@ -90,7 +149,7 @@ const rules={
       </div>
     <div style="margin-top: 70px;">
 <!--      点击 进入注册的第二个页面-->
-      <el-button @click="active=1" style="width: 270px;" type="danger" plain>开始重置密码</el-button>
+      <el-button @click="startRest()" style="width: 270px;" type="danger" plain>开始重置密码</el-button>
     </div>
   </div>
   <div style="text-align: center;margin: 0 20px" v-if="active===1">
@@ -102,7 +161,7 @@ const rules={
       <!--      这里用el自带的表单 可以绑定前端的页面 如果不符合的话自动报错 绑定form表单 加入rules规则 自己写 这里要绑定事件 这里要拿到它的函数应用-->
       <el-form :model="form" :rules="rules" @validate="onValidate" ref="formRef">
         <el-form-item prop="password">
-          <el-input v-model="form.password" :maxlength="16" type="password" placeholder="密码" >
+          <el-input v-model="form.password" :maxlength="16" type="password" placeholder="新密码" >
             <template #prefix>
               <el-icon>
                 <Lock/>
@@ -111,7 +170,7 @@ const rules={
           </el-input>
         </el-form-item>
         <el-form-item prop="password_repeat">
-          <el-input v-model="form.password_repeat" :maxlength="16" type="password" placeholder="重复密码" >
+          <el-input v-model="form.password_repeat" :maxlength="16" type="password" placeholder="重复新密码" >
             <template #prefix>
               <el-icon>
                 <Lock/>
@@ -124,7 +183,7 @@ const rules={
     </div>
     <div style="margin-top: 70px;">
       <!--      点击 进入注册的第二个页面-->
-      <el-button @click="active=1" style="width: 270px;" type="danger" plain>立即重置密码</el-button>
+      <el-button @click="doRset()" style="width: 270px;" type="danger" plain>立即重置密码</el-button>
     </div>
   </div>
 </template>

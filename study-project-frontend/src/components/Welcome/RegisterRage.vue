@@ -103,7 +103,7 @@ const register=()=>{
 const validateEmail =()=>{
   //这里只有三个值 url,data,success
   //import {post} from "@/net"; 这里记得返回自己的post 这里写了 axios 就可以与后端交互
-  post('/api/auth/valid-email',{
+  post('/api/auth/valid-register-email',{
     email: form.email
   },(message)=>{
     // 发送信息 弹窗型 这个
