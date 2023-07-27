@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -28,6 +29,8 @@ public class AuthrizeServiceImpl implements AuthrizeService {
     String form;
     @Resource
     UserMapper userMapper;
+
+    BCryptPasswordEncoder encoder =new BCryptPasswordEncoder();
     @Resource//这里是导入邮箱的模板
     MailSender mailSender;
     @Resource//这里使用redis数据库 如果服务器启动不了 注入失败 把Resource 改为Autowire  这里记得开redis服务器
@@ -52,7 +55,7 @@ public class AuthrizeServiceImpl implements AuthrizeService {
     }
 
     @Override
-    public boolean sendValidateEmail(String email,String sessionId) {
+    public String sendValidateEmail(String email,String sessionId) {
 
         /*
           1.先成验证码
@@ -68,8 +71,11 @@ public class AuthrizeServiceImpl implements AuthrizeService {
         if(Boolean.TRUE.equals(template.hasKey(key))){//这里要判断是不是有验证码 也就是说验证码在一分钟内不能再发送
             Long expire= Optional.ofNullable(template.getExpire(key,TimeUnit.SECONDS)).orElse(0L);//这里获得验证码剩余生效的时间
             if(expire>120){
-                return false;//如果大于了120返回false 剩余生效的时间 即不能连续点发送在60秒内
+                return "请求频繁,请稍后";//如果大于了120返回false 剩余生效的时间 即不能连续点发送在60秒内
             }
+        }
+        if(userMapper.findAccountByNameOrEmail(email)!=null){
+            return "邮箱已经被其他用户注册";
         }
         Random random=new Random();
         int code=random.nextInt(899999)+100000;//一定是6位数
@@ -82,10 +88,33 @@ public class AuthrizeServiceImpl implements AuthrizeService {
             mailSender.send(message);
 
             template.opsForValue().set(key,String.valueOf(code),3, TimeUnit.MINUTES);
-            return true;
+            return null;
         }catch (MailException e){
                e.printStackTrace();
-               return false;
+               return "邮件发送失败 请检查邮箱地址是否有效";
+        }
+    }
+
+    @Override
+    public String ValidateAndRegister(String username, String password, String email, String code,String sessionId) {
+        String key="email:"+sessionId+":"+email;//冒号分割属性
+        if(Boolean.TRUE.equals(template.hasKey(key))){//先判断数据库中有没有这个key 如果存在继续
+            String s=template.opsForValue().get(key);
+            if(s==null)return "验证码失效 请重新请求";
+            if(s.equals(code)){//请求成功去注册 这里将数据打包进数据库中 即注册
+                password=encoder.encode(password);
+                if(userMapper.createAccount(username,password,email)>0){
+                    return null;
+                }
+                else {
+                    return "内部错误";
+                }
+            }else {
+                return "验证码错误,请检查后提交";
+            }
+        }
+        else {
+            return "请先请求一封验证码邮件";
         }
     }
 }

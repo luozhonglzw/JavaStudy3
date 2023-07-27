@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.entity.Account;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
@@ -9,7 +10,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 /**
  * 这里写放送邮件
+ * 这里下一个是写验证和注册
  */
 public interface AuthrizeService extends UserDetailsService {
-    boolean sendValidateEmail(String email,String sessionId);
+    String sendValidateEmail(String email,String sessionId);
+    String ValidateAndRegister(String username,String password,String email, String code,String sessionId);
 }

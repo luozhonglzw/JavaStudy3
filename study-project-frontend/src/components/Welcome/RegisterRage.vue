@@ -68,6 +68,8 @@ const rules ={
     { required: true, message: '请输入验证码', trigger: 'blur' },
   ]
 }
+//设定一个冷却的默认值
+const coldTime =ref(0)
 //有个方法验证之前的表单是否通过 判断邮箱是否有效 一开始默认无效 这里的ref有多个选择
 const isEmailValid =  ref(false)
 // 这里要设置值 但是不用给
@@ -83,7 +85,15 @@ const onValidate =(prop,isValid)=>{
 const register=()=>{
   formRef.value.validate((isValid)=>{
     if(isValid){
-
+      post('/api/auth/register',{
+        username: form.username,
+        password:form.password,
+        email:form.email,
+        code:form.code
+      },(message)=>{
+        ElMessage.success(message)//发送我们后端写的弹窗信息
+        router.push('/')//注册成功 路由到登录页面
+      })
     }else {
       ElMessage.warning("请完整填写上面信息")
     }
@@ -98,6 +108,9 @@ const validateEmail =()=>{
   },(message)=>{
     // 发送信息 弹窗型 这个
       ElMessage.success(message)
+    // 这里设置冷却的时间 每次点击后都设置冷却的时间都为60
+    coldTime.value=60
+    setInterval(()=>coldTime.value--,1000)//每秒钟设置定时器 每次都减1
   })
 }
 </script>
@@ -114,7 +127,7 @@ const validateEmail =()=>{
 <!--      这里用el自带的表单 可以绑定前端的页面 如果不符合的话自动报错 绑定form表单 加入rules规则 自己写 这里要绑定事件 这里要拿到它的函数应用-->
       <el-form :model="form" :rules="rules" @validate="onValidate" ref="formRef">
         <el-form-item prop="username">
-          <el-input v-model="form.username" type="text" placeholder="用户名">
+          <el-input v-model="form.username" :maxlength="8" type="text" placeholder="用户名">
             <template #prefix>
               <el-icon>
                 <User/>
@@ -123,7 +136,7 @@ const validateEmail =()=>{
           </el-input>
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" >
+          <el-input v-model="form.password" :maxlength="16" type="password" placeholder="密码" >
             <template #prefix>
               <el-icon>
                 <Lock/>
@@ -132,7 +145,7 @@ const validateEmail =()=>{
           </el-input>
         </el-form-item>
         <el-form-item prop="password_repeat">
-          <el-input v-model="form.password_repeat" type="password" placeholder="重复密码" >
+          <el-input v-model="form.password_repeat" :maxlength="16" type="password" placeholder="重复密码" >
             <template #prefix>
               <el-icon>
                 <Lock/>
@@ -154,7 +167,7 @@ const validateEmail =()=>{
         <el-form-item prop="code">
           <el-row :gutter="10" style="width: 100%">
             <el-col :span="17">
-              <el-input v-model="form.code"  type="text" placeholder="请输入验证码">
+              <el-input v-model="form.code" :maxlength="6" type="text" placeholder="请输入验证码">
                 <template #prefix>
                   <el-icon>
                     <EditPen/>
@@ -163,8 +176,10 @@ const validateEmail =()=>{
               </el-input>
             </el-col>
             <el-col :span="5">
-<!--              这里如果 获得邮箱是无效的话 按钮也失效 disabled失效-->
-              <el-button type="success" @click="validateEmail" :disabled="!isEmailValid">获取验证码</el-button>
+<!--              这里如果 获得邮箱是无效的话 按钮也失效 disabled失效 这里要改内容-->
+              <el-button type="success" @click="validateEmail"
+                         :disabled="!isEmailValid ||coldTime>0">
+                {{coldTime>0?'请稍后 '+coldTime+' 秒':'获得验证码'}}</el-button>
             </el-col>
           </el-row>
         </el-form-item>

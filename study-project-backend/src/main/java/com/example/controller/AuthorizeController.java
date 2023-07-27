@@ -5,6 +5,7 @@ import com.example.service.AuthrizeService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.Pattern;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthorizeController {
     @Resource
     AuthrizeService service;
+    private  final String Username_REGEX="^[a-zA-z0-9一-龥]+$";//这里是验证 用户名只能有中文和英文
+
 
     /**
      * 这里要导入一个新的spring-boot-starter-validation 就是邮箱要合法
@@ -29,10 +32,27 @@ public class AuthorizeController {
     public RestBean<String> validateEmail(@Pattern (regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$")@RequestParam("email") String email,
                                           HttpSession session){
 //这里 加一个id 防止别人用用不同的邮件和验证码 session会话有个id
-            if(service.sendValidateEmail(email,session.getId())){
+        String s=service.sendValidateEmail(email,session.getId());
+            if(s==null){
                 return RestBean.success("邮件已发送 请查收");
             }else {
-                return RestBean.failure(400,"邮件发送失败");
+                return RestBean.failure(400,s);
             }
+    }
+    @PostMapping("/register")//因为这里需要前端的数据  这里也要验证 否者没有意义 @Pattern(regexp = Username_REGEX)验证的意思 还要判断长度
+    public RestBean<String> registerUser(@Pattern(regexp = Username_REGEX) @Length(min=2,max = 8) @RequestParam("username") String username,
+                                         @Length(min = 6,max = 16)@RequestParam("password") String password,
+                                         @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$")@RequestParam("email") String email,
+                                         @Length(min = 6,max = 6)@RequestParam("code")String code,
+                                         HttpSession session)//只能是6位
+    {
+        String s=service.ValidateAndRegister(username, password, email, code,session.getId());
+        if(s==null){
+            return RestBean.success("注册成功");
+        }else {
+            return RestBean.failure(400,s);
+        }
+
+
     }
 }
